@@ -1,4 +1,4 @@
-const CACHE_NAME = "mega-sena-cache-v1";
+const CACHE_NAME = "dupla-sena-cache-v1";
 const FILES_TO_CACHE = [
   "./index.html",      // OU ./index.html (veja observação abaixo)
   "./manifest.json",
