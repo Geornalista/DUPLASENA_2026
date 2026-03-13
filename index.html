@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mega Sena 2026</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#4CAF50" />
+
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 5px;
+      margin-bottom: 20px;
+    }
+
+    .grid-item {
+      aspect-ratio: 1 / 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      border-radius: 5px;
+      user-select: none;
+      font-size: 0.9em;
+    }
+
+    .grid-item.selected {
+      background-color: #4CAF50;
+      color: white;
+      border-color: #4CAF50;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      margin-top: 5px;
+    }
+
+    .btn-check {
+      background-color: #007bff;
+    }
+
+    .btn-clear {
+      background-color: #dc3545;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 16px;
+      text-align: left;
+      line-height: 1.6;
+    }
+
+    #result h3 {
+      margin-top: 20px;
+      margin-bottom: 10px;
+      color: #0056b3;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Marque seus números da sorte</h1>
+
+    <div id="number-grid" class="grid-container"></div>
+
+    <p>Números selecionados: <span id="selected-count">0</span></p>
+
+    <div class="button-container">
+      <button class="btn-check" onclick="checkResults()">Verificar Resultado</button>
+      <button class="btn-clear" onclick="clearSelection()">Limpar Seleção</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const numberGrid = document.getElementById("number-grid");
+    const selectedCountSpan = document.getElementById("selected-count");
+    const resultDiv = document.getElementById("result");
+
+    let selectedNumbers = [];
+    const allGridItems = [];
+
+    for (let i = 1; i <= 60; i++) {
+      const item = document.createElement("div");
+      item.className = "grid-item";
+      item.textContent = i.toString().padStart(2, "0");
+      item.dataset.number = i;
+
+      item.addEventListener("click", () => toggleNumber(item));
+      numberGrid.appendChild(item);
+      allGridItems.push(item);
+    }
+
+    function toggleNumber(el) {
+      const num = parseInt(el.dataset.number);
+      const idx = selectedNumbers.indexOf(num);
+
+      if (idx >= 0) {
+        selectedNumbers.splice(idx, 1);
+        el.classList.remove("selected");
+      } else {
+        if (selectedNumbers.length >= 20) {
+          alert("Você pode selecionar no máximo 20 números.");
+          return;
+        }
+        selectedNumbers.push(num);
+        el.classList.add("selected");
+      }
+
+      selectedCountSpan.textContent = selectedNumbers.length;
+    }
+
+    function clearSelection() {
+      selectedNumbers = [];
+      allGridItems.forEach(i => i.classList.remove("selected"));
+      selectedCountSpan.textContent = 0;
+      resultDiv.innerHTML = "";
+    }
+
+    const API_URL = "https://loteriascaixa-api.herokuapp.com/api/megasena";
+
+async function carregarHistorico() {
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error("Erro na API");
+
+    const data = await res.json();
+
+    const concursos = data.map(c => ({
+      concurso: c.concurso,
+      data: c.data,
+      dezenas: c.dezenas.map(n => parseInt(n))
+    }));
+
+    localStorage.setItem("megaSenaCache", JSON.stringify(concursos));
+    return concursos;
+  } catch (e) {
+    console.warn("Usando cache local", e);
+    const cache = localStorage.getItem("megaSenaCache");
+    return cache ? JSON.parse(cache) : [];
+  }
+}
+
+
+    async function checkResults() {
+      if (selectedNumbers.length < 6 || selectedNumbers.length > 20) {
+        alert("Selecione entre 6 e 20 números.");
+        return;
+      }
+
+      const historico = await carregarHistorico();
+
+      if (historico.length === 0) {
+        alert("Não foi possível carregar os dados.");
+        return;
+      }
+
+      let quadra = [];
+let quina = [];
+let sena = [];
+
+historico.forEach(c => {
+  const acertos = c.dezenas.filter(n =>
+    selectedNumbers.includes(n)
+  ).length;
+
+  if (acertos === 4) quadra.push(c);
+  if (acertos === 5) quina.push(c);
+  if (acertos === 6) sena.push(c);
+});
+
+function listaResultados(lista) {
+  if (lista.length === 0) return "<em>Nenhum</em>";
+
+  return lista
+    .map(
+      c =>
+        `Concurso ${c.concurso} (${c.data})`
+    )
+    .join("<br>");
+}
+
+resultDiv.innerHTML = `
+  <h3>Resultado</h3>
+
+  <p><strong>Quadra:</strong> ${quadra.length} vezes</p>
+  <div>${listaResultados(quadra)}</div>
+
+  <p><strong>Quina:</strong> ${quina.length} vezes</p>
+  <div>${listaResultados(quina)}</div>
+
+  <p><strong>Sena:</strong> ${sena.length} vezes</p>
+  <div>${listaResultados(sena)}</div>
+`;
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js");
+    }
+  </script>
+</body>
+</html>
