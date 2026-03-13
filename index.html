@@ -162,7 +162,7 @@
       } else {
         // Limite da Dupla Sena é de 15 dezenas
         if (selectedNumbers.length >= 15) {
-          alert("Você pode selecionar no máximo 15 números para a Dupla Sena.");
+          alert("Pode selecionar no máximo 15 números para a Dupla Sena.");
           return;
         }
         selectedNumbers.push(num);
@@ -179,7 +179,7 @@
       resultDiv.innerHTML = "";
     }
 
-    // Endpoint atualizado para a Dupla Sena
+    // Endpoint da Dupla Sena
     const API_URL = "https://loteriascaixa-api.herokuapp.com/api/duplasena";
 
     async function carregarHistorico() {
@@ -189,19 +189,24 @@
 
         const data = await res.json();
 
-        const concursos = data.map(c => ({
-          concurso: c.concurso,
-          data: c.data,
-          // Mapeando 1º sorteio
-          dezenas1: c.dezenas ? c.dezenas.map(n => parseInt(n)) : [],
-          // Mapeando 2º sorteio com fallback para variações comuns no JSON da API
-          dezenas2: c.dezenas2 ? c.dezenas2.map(n => parseInt(n)) : (c.dezenas_2 ? c.dezenas_2.map(n => parseInt(n)) : [])
-        }));
+        const concursos = data.map(c => {
+          // Converte todas as dezenas recebidas para números
+          const todasDezenas = c.dezenas ? c.dezenas.map(n => parseInt(n)) : [];
+
+          return {
+            concurso: c.concurso,
+            data: c.data,
+            // O 1º sorteio pega os índices de 0 a 5 (os 6 primeiros números)
+            dezenas1: todasDezenas.slice(0, 6),
+            // O 2º sorteio pega os índices de 6 a 11 (os 6 últimos números)
+            dezenas2: todasDezenas.slice(6, 12)
+          };
+        });
 
         localStorage.setItem("duplaSenaCache", JSON.stringify(concursos));
         return concursos;
       } catch (e) {
-        console.warn("Usando cache local", e);
+        console.warn("A usar cache local", e);
         const cache = localStorage.getItem("duplaSenaCache");
         return cache ? JSON.parse(cache) : [];
       }
@@ -213,7 +218,7 @@
         return;
       }
 
-      resultDiv.innerHTML = "<p><em>Analisando os sorteios...</em></p>";
+      resultDiv.innerHTML = "<p><em>A analisar os sorteios...</em></p>";
       const historico = await carregarHistorico();
 
       if (historico.length === 0) {
