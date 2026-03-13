@@ -1,6 +1,6 @@
 {
-  "name": "Mega Sena 2026",
-  "short_name": "Mega Sena",
+  "name": "Dupla Sena 2026",
+  "short_name": "Dupla Sena",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
